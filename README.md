@@ -1,3 +1,2 @@
 # myServer
-# gym-app-server
-# gym-app-server
+Server for gym-app
