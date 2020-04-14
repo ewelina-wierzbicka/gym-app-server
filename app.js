@@ -24,13 +24,19 @@ app.get('/workout', (req, res) => {
   });
 });
 
-
 app.get('/workout/:id', (req, res) => {
-  collection.find({ _id: req.params.id.toString() })
-  .project({
-    _id: 0,
-    exercises: 1
-  })
+  collection.aggregate([
+    { $match: { _id: req.params.id.toString() } },
+    { $project: {
+      _id: 0,
+      exercises: 1
+    } },
+    { $unwind: "$exercises" },
+    { $project: {
+      title: "$exercises.title",
+      sets: "$exercises.sets"
+    } }
+  ])
   .toArray((err, result) => {
     if (err) {
       res.status(404).send('We have faiced some issues');
@@ -44,6 +50,7 @@ app.get('/workout/:id/exercises/:exerciseId', (req, res) => {
   collection.aggregate([
     { $match: { _id: req.params.id.toString() } },
     { $project: {
+        _id: 0,
         exercise: {
           $filter: {
             input: "$exercises",
@@ -54,7 +61,6 @@ app.get('/workout/:id/exercises/:exerciseId', (req, res) => {
     } },
     { $unwind: "$exercise"},
     { $project: {
-        _id: 0,
         sets: "$exercise.sets"
     } }
    ])
@@ -140,7 +146,7 @@ app.put('/workout/:id/exercises/:exerciseId', (req, res) => {
 });
 
 
-const client = new MongoClient(process.env.DB_CONNECTION, { useNewUrlParser: true });
+const client = new MongoClient(process.env.DB_CONNECTION, { useNewUrlParser: true }, { useUnifiedTopology: true });
 client.connect(() => {
   collection = client.db("gym-app").collection("workout-list");
 });
